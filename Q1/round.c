@@ -25,28 +25,25 @@
  *
  * =====================================================================================
  */
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <getopt.h>
 
-
-void convertToDigits(int * num, char * string) ;
-void convertToRoundString (char * string, char roundChar, int * num, int size) ;
-void removeDigits (int * digits, int loc, int * size) ;
-void resizeDigits (int * digits, int amount, int * size) ;
-
 int main ( int argc, char *argv[] ) {
-	// Get the options. //
-	int i = 0 ;
-	// The rounding mode. Default K. //
-	int rounding = 3 ;
-	char roundChar = 'K' ;
-	// Buffer to contain the number. //
-	char * number = malloc(sizeof(char)*100) ;
-	bool humanReadable = false ;
-	bool flag = false ;
+	// The exponent N of 2^N that describes the option. Default K : N=10. //
+	int roundingExponent = 10 ;
+	// Possible options. //
+	char posChars[6] = {'K', 'M', 'G', 'T', 'P', 'E'} ;
+	// Default rounding character is K. //
+	char roundChar = posChars[0] ;
+	// Buffer to contain the numberString. //
+	char * numberString = malloc(sizeof(char)*200) ;
+	bool humanReadableSet = false ;
+	bool flagsSet = false ;
 	int opt ;
 
 	if (argc > 3) {
@@ -54,49 +51,49 @@ int main ( int argc, char *argv[] ) {
 		exit(-2) ;
 	}
 
-	// Get the options. //
+	// Get the options. Extracts flags and associated argument. Sets exponent and rounding character. //
 	while((opt = getopt(argc, argv, "K:M:G:T:P:E:h:")) != -1) {
 		switch(opt) {
 			case 'K' : 
-				rounding = 3 ;
-				flag = true ;
-				strcpy(number,optarg) ;
-				roundChar = 'K' ;
+				roundingExponent = 10 ;
+				flagsSet = true ;
+				strcpy(numberString,optarg) ;
+				roundChar = posChars[0] ;
 				break ;
 			case 'M' : 
-				rounding = 6 ;
-				flag = true ;
-				strcpy(number,optarg) ;
-				roundChar = 'M' ;
+				roundingExponent = 20 ;
+				flagsSet = true ;
+				strcpy(numberString,optarg) ;
+				roundChar = posChars[1] ;
 				break ;
 			case 'G' : 
-				rounding = 9 ;
-				flag = true ;
-				strcpy(number,optarg) ;
-				roundChar = 'G' ;
+				roundingExponent = 30 ;
+				flagsSet = true ;
+				strcpy(numberString,optarg) ;
+				roundChar = posChars[2] ;
 				break ;
 			case 'T' : 
-				rounding = 12 ;
-				flag = true ;
-				strcpy(number,optarg) ;
-				roundChar = 'T' ;
+				roundingExponent = 40 ;
+				flagsSet = true ;
+				strcpy(numberString,optarg) ;
+				roundChar = posChars[3] ;
 				break ;
 			case 'P' : 
-				rounding = 15 ;
-				flag = true ;
-				strcpy(number,optarg) ;
-				roundChar = 'P' ;
+				roundingExponent = 50 ;
+				flagsSet = true ;
+				strcpy(numberString,optarg) ;
+				roundChar = posChars[4] ;
 				break ;
 			case 'E' : 
-				rounding = 18 ;
-				flag = true ;
-				strcpy(number,optarg) ;
-				roundChar = 'E' ;
+				roundingExponent = 60 ;
+				flagsSet = true ;
+				strcpy(numberString,optarg) ;
+				roundChar = posChars[5] ;
 				break ;
 			case 'h' : 
-				humanReadable = true ;
-				flag = true ;
-				strcpy(number,optarg) ;
+				humanReadableSet = true ;
+				flagsSet = true ;
+				strcpy(numberString,optarg) ;
 				break ;
 			default : 
 				fprintf(stderr, "Usage : ./round [OPTIONAL ARG] [NUMBER]\n") ;
@@ -106,110 +103,32 @@ int main ( int argc, char *argv[] ) {
 	}
 
 	// If no options are specified. //
-	if (!flag) {
-		strcpy(number, argv[1]) ;
+	if (!flagsSet) {
+		strcpy(numberString, argv[1]) ;
 	}
 
-	int * digits = malloc(sizeof(int)*strlen(number)) ;
-	int numDigits = strlen(number) ;
-	int currIndex ;
-	convertToDigits(digits, number) ;
-	if (numDigits <= rounding) {
-		resizeDigits(digits, (rounding-numDigits+1), &numDigits) ;
-	}
-	currIndex = (numDigits-rounding+1) ;
-	int roundNum  = digits[currIndex] ;
-	removeDigits(digits, currIndex, &numDigits) ;
-	if (roundNum > 5) {
-		bool roundingFinished = false ;
-		while(!roundingFinished) {
-			--currIndex ;
-			if (currIndex < 0) {
-				resizeDigits(digits, 1, &numDigits) ;
-				++currIndex ;
-			}
-			++digits[currIndex] ;
-			if (digits[currIndex] == 10) {
-				digits[currIndex] = 0 ;
-			} else {
-				roundingFinished = true ;
-			}
+	double numToBeRounded ;
+	sscanf(numberString, "%lf", &numToBeRounded) ;
+
+	// If it's in humanreadable mode then get the closest exponent using log_(2^10)(num). //
+	if (humanReadableSet) {
+		int closestExponent = round(log(numToBeRounded)/log(1024)) ;
+		// Can't be above 6. //
+		if (closestExponent > 6) {
+			closestExponent = 6 ;
 		}
+		roundChar = posChars[closestExponent-1] ;
+		roundingExponent = closestExponent*10 ;
 	}
-	convertToRoundString(number, roundChar, digits, numDigits) ;
-	printf("%s\n", number) ;
-	free(number) ;
-	free(digits) ;
+
+	// Create the rounding constant of the form (2^N)/10. //
+	double roundingConst = (pow(2, roundingExponent))/10.f ;
+	// Get a number containing the digits of interest, round if and divide by 10 to introduce decimel place. //
+	double finalDigits = round(numToBeRounded / roundingConst)/10.f ;
+
+	// Print double of the form a.bc. //
+	printf("%.1lf%c\n", finalDigits, roundChar) ;
+	free(numberString) ;
 
 	return EXIT_SUCCESS ;
 }				/* ----------  end of function main  ---------- */
-
-
-/* 
- * ===  FUNCTION  ======================================================================
- *         Name:  convertToDigits
- *    Arguments:  int * num - Array to save the numbers to.
- *                char * string - String to convert.
- *  Description:  Converts string to array of digits.
- * =====================================================================================
- */
-
-void convertToDigits(int * num, char * string) {
-	int i ;
-	for (i = 0 ; i < strlen(string) ; ++i) {
-		num[i] = string[i]-'0' ;
-	}
-}
-
-/* 
- * ===  FUNCTION  ======================================================================
- *         Name:  convertToRoundString
- *    Arguments:  char * string - Location to save the number to.
- *                int * digits - Source of the digits.
- *  Description:  Converts digits to string.
- * =====================================================================================
- */
-
-void convertToRoundString (char * string, char roundChar, int * num, int size) {
-	int i ;
-	for (i = 0 ; i < size-1 ; ++i) {
-		string[i] = '0' + num[i] ;
-	}
-	string[size-1] = '.' ;
-	string[size] = '0' + num[size-1] ;
-	string[size+1] = roundChar ;
-	string[size+2] = '\0' ;
-}		/* -----  end of function convertToRoundString  ----- */
-
-
-/* 
- * ===  FUNCTION  ======================================================================
- *         Name:  removeDigits
- *    Arguments:  int * digits - Location of digits array.
- *                int loc - Location to begin removing.
- *                int size - Number of digits.
- *  Description:  Removes digits to the right of loc inclusive.
- * =====================================================================================
- */
-
-void removeDigits (int * digits, int loc, int * size) {
-	realloc(digits, sizeof(int)*(loc)) ;
-	*size = loc ;
-}		/* -----  end of function removeDigits  ----- */
-
-/* 
- * ===  FUNCTION  ======================================================================
- *         Name:  removeDigits
- *    Arguments:  int * digits - Location of digits array.
- *                int loc - Location to begin removing.
- *                int size - Number of digits.
- *  Description:  Removes digits to the right of loc inclusive.
- * =====================================================================================
- */
-
-void resizeDigits (int * digits, int amount, int * size) {
-	realloc(digits, sizeof(int)*(amount+*size)) ;
-	memcpy(&digits[amount], digits, sizeof(int)*(*size)) ;
-	memset(&digits[0], 0, sizeof(int)*amount) ;
-	*size = *size+amount ;
-}		/* -----  end of function removeDigits  ----- */
