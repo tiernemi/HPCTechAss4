@@ -28,9 +28,10 @@
 #include <stdbool.h>
 #include <getopt.h>
 
+void printHexDump (char * contents, int fsize) ;
+
 int main ( int argc, char *argv[] ) {
 
-	int i,j ;
 	int opt ;
 	bool readFromFile = false ;
 	char * filename = NULL ;
@@ -93,8 +94,31 @@ int main ( int argc, char *argv[] ) {
 
 // ================================== PRINT OUT HEXDUMP ============================================ //
 
+	printHexDump(contents, fsize) ;
+
+	if (readFromFile) {
+		free(filename) ;
+		fclose(input) ;
+	}
+	free(contents) ;
+
+	return EXIT_SUCCESS;
+}				/* ----------  end of function main  ---------- */
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  printHexDump(char * contents, int fsize) 
+ *    Arguments:  contents - The contents of the file as a string.
+ *                fsize - The size of the file.
+ *  Description:  Prints the hexdump, replaces escape characters with "."
+ * =====================================================================================
+ */
+
+void printHexDump (char * contents, int fsize) {
+	int i,j ;
 	for (i = 0 ; i < ceil((double) fsize/(double) 16) ; ++i) {
-		// Print lines as long as 16 bytes still available. Else process edge case of less than 16 bytes. //
+	// Print lines as long as 16 bytes still available. Else process edge case of less than 16 bytes. //
 		if ((16*(i+1)/(fsize)) < 1) { 
 			// Offset. //
 			printf("%08x  ", 16*i) ;
@@ -108,6 +132,7 @@ int main ( int argc, char *argv[] ) {
 			}
 			// Word part. //
 			printf(" |") ;
+			// Ignore escape chars. //
 			for (j = 0 ; j < 16 ; ++j) {
 				switch (contents[16*i+j]) {
 					case '\n' :
@@ -161,7 +186,9 @@ int main ( int argc, char *argv[] ) {
 			}
 			// Word part. //
 			printf(" |") ;
-			for (j = 0 ; j < fsize-(16*i) ; ++j) {
+			int termPoint = fsize-(16*i) ;
+			// Ignore escape chars. //
+			for (j = 0 ; j < termPoint ; ++j) {
 				switch (contents[16*i+j]) {
 					case '\n' :
 						printf(".") ;
@@ -197,12 +224,4 @@ int main ( int argc, char *argv[] ) {
 	}
 	// Print final offset. //
 	printf("%08x\n", fsize) ;
-
-	if (readFromFile) {
-		free(filename) ;
-		fclose(input) ;
-	}
-	free(contents) ;
-
-	return EXIT_SUCCESS;
-}				/* ----------  end of function main  ---------- */
+}		/* -----  end of function printHexDump  ----- */
