@@ -33,7 +33,7 @@ int main ( int argc, char *argv[] ) {
 	int i,j ;
 	int opt ;
 	bool readFromFile = false ;
-	char * filename ;
+	char * filename = NULL ;
 
 // ================================= OPTIONS PARSING =============================================== //
 
@@ -48,10 +48,9 @@ int main ( int argc, char *argv[] ) {
 	}
 
 	// Gets the command line arguments based on where getopt has stopped scanning. //
-	if ((argc - optind) == 0) {
+	if ((argc-optind) == 0) {
 		readFromFile = false ;
-	}
-	if ((argc - optind) == 1) {
+	} else if ((argc-optind) == 1) {
 		filename = malloc(sizeof(char)*(strlen(argv[optind])+1)) ;
 		strcpy(filename, argv[optind]) ;
 		readFromFile = true ;
@@ -74,17 +73,23 @@ int main ( int argc, char *argv[] ) {
 		input = stdin ;
 	}
 
-	// Read stream. //
-	fseek(input, 0, SEEK_END) ;
-	unsigned int fsize = ftell(input) ;
-	fseek(input, 0, SEEK_SET) ;
 
-	// Store strea contents. //
-	char * contents = malloc(sizeof(char)*(fsize+1)) ;
-	if (!fread(contents, fsize, 1, input)) {
-		fprintf(stderr, "Failed to read entire file\n") ;
-		exit(-3) ;	
-	};
+	// Read in and store byte data from buffer. //
+	int bufSize = 200 ;
+	char * contents = malloc(sizeof(char)*bufSize) ;
+	char * buffer = malloc(sizeof(char)*bufSize) ;
+	int fsize = 0 ;
+	if (fgets(buffer, bufSize, input) != NULL) {
+		fsize += strlen(buffer) ;
+		contents = realloc(contents, sizeof(char)*(fsize+1)) ;
+		strcpy(contents,buffer) ;
+	}
+	while (fgets(buffer, bufSize, input) != NULL) {
+		fsize += strlen(buffer) ;
+		contents = realloc(contents, sizeof(char)*(fsize+1)) ;
+		strcat(contents,buffer) ;
+	}
+	free(buffer) ;
 
 // ================================== PRINT OUT HEXDUMP ============================================ //
 
@@ -104,7 +109,7 @@ int main ( int argc, char *argv[] ) {
 			// Word part. //
 			printf(" |") ;
 			for (j = 0 ; j < 16 ; ++j) {
-				switch (contents[j]) {
+				switch (contents[16*i+j]) {
 					case '\n' :
 						printf(".") ;
 						break ;
@@ -130,7 +135,7 @@ int main ( int argc, char *argv[] ) {
 						printf(".") ;
 						break ;
 					default :
-						printf("%c", contents[j]) ;
+						printf("%c", contents[16*i+j]) ;
 						break ;
 				}
 			}
@@ -194,8 +199,10 @@ int main ( int argc, char *argv[] ) {
 	printf("%08x\n", fsize) ;
 
 	if (readFromFile) {
-		readFromFile = false ;
+		free(filename) ;
+		fclose(input) ;
 	}
+	free(contents) ;
 
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */

@@ -18,4 +18,8 @@ clean:
 	rm -f my_hexdump $(objects)
 
 test : my_hexdump
+	./my_hexdump /etc/issue
+	cat /etc/issue | ./my_hexdump 
+	./my_hexdump ~/.bashrc
+	cat ~/.bashrc | ./my_hexdump
 
