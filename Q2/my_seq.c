@@ -94,7 +94,7 @@ int main ( int argc, char *argv[] ) {
 		sscanf(argv[optind+1], "%d\n", &increment) ;
 		sscanf(argv[optind+2], "%d\n", &end) ;
 	} else {
-		fprintf (stderr, "Incorrect number of arguments expected. At most three arguments. Usage ./my_seq [OPTION] [ARGS] \n");
+		fprintf (stderr, "Incorrect number of arguments. At most three arguments. Usage ./my_seq [OPTION] [ARGS] \n");
 		exit(-1) ;
 	}
 	

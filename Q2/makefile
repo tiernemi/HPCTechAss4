@@ -17,18 +17,15 @@ my_seq.o : my_seq.c
 clean:
 	rm -f my_seq $(objects)
 
-test : round
-	./round 1000
-	./round 1024
-	./round 1100
-	./round -M 100000
-	./round -M 1048576
-	./round -M 10485760
-	./round -M 104857600
-	./round -G 1073741824
-	./round -T 1099511627776
-	./round -P 1125899906842624
-	./round -E 1152921504606846976
-	./round -h 11529215046 
+test : my_seq
+	./my_seq 5
+	./my_seq 1 10
+	./my_seq -w 10 100
+	./my_seq -w 10 5 100
+	./my_seq -w -10 5 10
+	./my_seq -w -10 5 -5
+	./my_seq -w -10 -1 -15
+	./my_seq -w -10 -5 -15
+	./my_seq -w 0 2 -6
 
 
