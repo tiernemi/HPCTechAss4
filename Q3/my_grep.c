@@ -100,25 +100,25 @@ int main ( int argc, char *argv[] ) {
 	// COntinue reading in lines until encountering the end of the buffer. //
 	while (getline(&buffer, &len, input) != -1) {
 		// Make a copy of the buffer. //
-		char * copy = strdup(buffer) ;
+		char * locOfLastPattern = buffer ;
 		bool patternPresent = false ;
 		++lineNum ;
 
 		// Start extracting pattern locations. //
 		char * loc = strstr(buffer, pattern) ;
-		copy = loc + strlen(pattern) ;
+		locOfLastPattern = loc + strlen(pattern) ;
 		char ** patternLocations = malloc(sizeof(char*)) ;
 		int numPatterns = 0 ;
 
-		// Look for more patterns within the line. //
+		// Look for more patterns within the line. /
 		while (loc != NULL) {
 			++numPatterns ;
 			patternLocations = realloc(patternLocations, sizeof(char*)*numPatterns) ;
 			patternLocations[numPatterns-1] = loc ;
 			patternPresent = true ;
-			loc = strstr(copy, pattern) ;
+			loc = strstr(locOfLastPattern, pattern) ;
 			// Move copy away from the last pattern found to avoid duplicate detection. //
-			copy = loc + strlen(pattern) ;
+			locOfLastPattern = loc + strlen(pattern) ;
 		}
 
 		// Apply the flags to the printing. //
